@@ -201,6 +201,11 @@ if [ -n "$files_to_rename" ]; then
   done
 fi
 
+# A replacement of different length than the original (in a name, owner, or title) shifts Markdown
+# table column widths. Reformat before npm install so the rename's own output is never what makes the
+# closing `npm run check` fail.
+npm run format >/dev/null
+
 npm install
 
 printf '%s\n' "Rename complete. Run 'npm run check' to verify."

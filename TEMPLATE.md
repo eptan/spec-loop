@@ -38,7 +38,9 @@ grep -rn TEMPLATE:REPLACE packages/
 Replace `packages/hello`'s implementation and test with your first domain capability, and either replace
 `packages/greeter` with your second capability (keeping the same dependency-on-the-first pattern) or delete
 it if your project doesn't need a second package yet. Update `openspec/specs/repository-foundation/spec.md`
-to describe your capability's actual contract instead of `greet`/`announce`.
+to describe your capability's actual contract instead of `greet`/`announce`. `npm run check`'s convention
+check only fails if `packages/hello`'s implementation and test disagree on whether the marker is still
+present — replacing both together (removing the marker from both) passes cleanly.
 
 ## 3. Verify the workspace
 

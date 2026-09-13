@@ -34,3 +34,5 @@ jobs:
           CHECK_DIFF_RANGE: ${{ format('{0}...{1}', github.event.pull_request.base.sha || github.event.before, github.sha) }}
           CHECK_DEPENDABOT: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
         run: npm run check
+      - name: Run rename fixture
+        run: ./scripts/test-rename.sh

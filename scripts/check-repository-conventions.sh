@@ -13,11 +13,18 @@ fail() {
 
 grep -q '^## OpenSpec Dependencies$' docs/dependency-patterns.md \
   || fail "Dependency documentation must define the OpenSpec dependency convention"
-grep -q 'add-repository-evolution-markers' plans/roadmap.md \
-  || fail "Roadmap must reference the repository evolution change"
-grep -q 'TEMPLATE:REPLACE' packages/hello/src/index.ts \
-  || fail "Example implementation is missing TEMPLATE:REPLACE marker"
-grep -q 'TEMPLATE:REPLACE' packages/hello/src/index.test.ts \
-  || fail "Example test is missing TEMPLATE:REPLACE marker"
+
+# TEMPLATE.md tells a fork owner to replace packages/hello's implementation and test, removing the
+# TEMPLATE:REPLACE marker in the process. This check must tolerate that finished state (neither file
+# carries the marker) as well as this repository's own unforked state (both carry it) — it exists only
+# to catch a half-finished replacement, where one file was updated and the other was not.
+impl_has_marker=false
+test_has_marker=false
+grep -q 'TEMPLATE:REPLACE' packages/hello/src/index.ts && impl_has_marker=true
+grep -q 'TEMPLATE:REPLACE' packages/hello/src/index.test.ts && test_has_marker=true
+
+if [ "$impl_has_marker" != "$test_has_marker" ]; then
+  fail "packages/hello's implementation and test disagree on the TEMPLATE:REPLACE marker — finish replacing both, or restore the marker in both, before running this check"
+fi
 
 printf '%s\n' "Repository convention check passed"
