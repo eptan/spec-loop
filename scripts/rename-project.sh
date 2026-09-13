@@ -76,6 +76,21 @@ case "$new_name" in
     ;;
 esac
 
+if [ -n "$new_owner" ]; then
+  case "$new_owner" in
+    [A-Za-z0-9]*)
+      case "$new_owner" in
+        *[!A-Za-z0-9-]* | *--* | *-)
+          fail "New owner '$new_owner' must be alphanumeric with single hyphens (no leading/trailing/double hyphen)"
+          ;;
+      esac
+      ;;
+    *)
+      fail "New owner '$new_owner' must be alphanumeric with single hyphens (no leading/trailing/double hyphen)"
+      ;;
+  esac
+fi
+
 [ -f package.json ] || fail "Must be run from the repository root (package.json not found)"
 
 if [ -n "$(git status --porcelain)" ]; then
@@ -105,6 +120,14 @@ exclude_path() {
   esac
 }
 
+# --title and --description are free text (unlike <new-name> and --owner, which are validated to a
+# safe character set), so a value containing a sed delimiter or backreference character would
+# otherwise break or silently corrupt the substitution below. Escape every value going into a sed
+# pattern or replacement, not only the ones that could plausibly carry one today.
+sed_escape() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/&/\\\&/g' -e 's#/#\\/#g'
+}
+
 # Archived OpenSpec change ids (directory name minus its date prefix) are historical identifiers
 # that can legitimately embed the old project name (e.g. `improve-agentic-boiler-governance`).
 # Living files that reference such an id by name (roadmap rows, dependency sections) must keep
@@ -128,11 +151,18 @@ if [ -d openspec/changes/archive ]; then
   done
 fi
 
-printf 's/@%s/@%s/g\n' "$old_name" "$new_name" >> "$rename_sed"
-printf 's/%s\/%s/%s\/%s/g\n' "$old_owner" "$old_name" "$new_owner" "$new_name" >> "$rename_sed"
-printf 's/%s/%s/g\n' "$old_title" "$new_title" >> "$rename_sed"
-printf 's/%s/%s/g\n' "$old_name" "$new_name" >> "$rename_sed"
-printf 's/%s/%s/g\n' "$old_owner" "$new_owner" >> "$rename_sed"
+esc_old_name=$(sed_escape "$old_name")
+esc_new_name=$(sed_escape "$new_name")
+esc_old_owner=$(sed_escape "$old_owner")
+esc_new_owner=$(sed_escape "$new_owner")
+esc_old_title=$(sed_escape "$old_title")
+esc_new_title=$(sed_escape "$new_title")
+
+printf 's/@%s/@%s/g\n' "$esc_old_name" "$esc_new_name" >> "$rename_sed"
+printf 's/%s\/%s/%s\/%s/g\n' "$esc_old_owner" "$esc_old_name" "$esc_new_owner" "$esc_new_name" >> "$rename_sed"
+printf 's/%s/%s/g\n' "$esc_old_title" "$esc_new_title" >> "$rename_sed"
+printf 's/%s/%s/g\n' "$esc_old_name" "$esc_new_name" >> "$rename_sed"
+printf 's/%s/%s/g\n' "$esc_old_owner" "$esc_new_owner" >> "$rename_sed"
 
 if [ -d openspec/changes/archive ]; then
   idx=0
@@ -148,6 +178,10 @@ if [ -d openspec/changes/archive ]; then
 fi
 
 # Content rewrite: every tracked, non-excluded file gets rewritten in place, preserving its mode.
+# Split only on newlines, not spaces/tabs, so a tracked path containing a space is one entry.
+old_ifs=$IFS
+IFS='
+'
 files=$(git ls-files)
 for f in $files; do
   exclude_path "$f" && continue
@@ -157,6 +191,7 @@ for f in $files; do
     rm -f "$f.bak"
   fi
 done
+IFS=$old_ifs
 
 if [ -n "$new_description" ]; then
   node -e "

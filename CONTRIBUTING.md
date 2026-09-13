@@ -27,6 +27,10 @@ npm ci
 npm run check
 ```
 
+Install [gitleaks](https://github.com/gitleaks/gitleaks#installing) locally for full secret-scan coverage;
+the check falls back to a narrower pattern when it's absent, which still runs on every commit but is a
+review guard, not a guarantee (see [`SECURITY.md`](SECURITY.md)).
+
 Useful Nx commands:
 
 ```bash

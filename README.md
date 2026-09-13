@@ -61,6 +61,10 @@ Install the local hooks once per clone:
 `npm run check` runs strict OpenSpec validation, agent-harness and roadmap checks, documentation and secret
 checks, then Nx formatting, linting, type checking, tests, and builds.
 
+The secret check uses [gitleaks](https://github.com/gitleaks/gitleaks#installing) when it's on `PATH`, and
+falls back to a narrow keyword pattern otherwise. Install gitleaks locally for real coverage — either way,
+per [`SECURITY.md`](SECURITY.md), this check is a review guard, not a guarantee.
+
 Forking this to start your own project? After `npm ci`, run `npm run rename -- <your-project-name>` to
 rewrite every tracked identity string, npm scope, and file/directory name in one pass — see
 [`TEMPLATE.md`](TEMPLATE.md) for the full one-time setup path.
@@ -104,13 +108,9 @@ focused working methods, not hidden authority. Discovery adapter paths like `.op
 | `pull-request-automation`        | Prepare safe commit and pull-request automation.                      |
 | `repository-harness-audit`       | Review commands, skills, adapters, and harness governance.            |
 | `link-workspace-packages`        | Link packages in the npm workspace correctly.                         |
-| `monitor-ci`                     | Monitor bounded CI and self-healing workflow status.                  |
 | `agent-rule`                     | Turn repository requests into durable agent rules.                    |
 | `neutral-repository-attribution` | Keep repository-produced documentation and reports neutral.           |
-| `next-best-practices`            | Guide Next.js application and App Router work.                        |
-| `react-best-practices`           | Guide React component, hook, and rendering work.                      |
 | `nx-plugins`                     | Discover and add Nx technology plugins.                               |
-| `nx-import`                      | Bring existing repositories into an Nx workspace.                     |
 
 Keep new reusable skills in `.agent/skills/`, document their boundaries, and expose them through the
 existing discovery symlinks instead of copying divergent versions into adapter directories.
@@ -130,10 +130,14 @@ Project targets are intentionally explicit:
 | `lint`      | Static code-quality checks                    |
 | `typecheck` | TypeScript validation without emitting output |
 | `test`      | Deterministic project tests                   |
-| `build`     | Compile and package project output            |
+| `build`     | Emit type declarations                        |
 
-Use Nx targets rather than invoking project tooling directly. As the workspace grows, applications should
-compose reusable libraries instead of stuffing domain logic into presentation projects.
+`hello` and `greeter` are source-only: `build` emits `.d.ts` files for editor and downstream typecheck
+support, not runnable `.js`. Other packages in this workspace import them directly by source through the
+`@spec-loop/source` package export condition (see `packages/greeter/src/index.ts`), so no build step is
+required to consume them within this workspace. Use Nx targets rather than invoking project tooling
+directly. As the workspace grows, applications should compose reusable libraries instead of stuffing
+domain logic into presentation projects.
 
 ## Spec-Driven Workflow
 

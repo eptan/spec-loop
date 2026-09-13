@@ -23,6 +23,10 @@ fi
 needs_docs=false
 has_docs=false
 
+# Split only on newlines, not spaces/tabs, so a path containing a space is one entry, not several.
+old_ifs=$IFS
+IFS='
+'
 for file in $staged_files; do
   case "$file" in
     README.md|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|docs/*|openspec/*)
@@ -36,6 +40,7 @@ for file in $staged_files; do
       ;;
   esac
 done
+IFS=$old_ifs
 
 if [ "$needs_docs" = true ] && [ "$has_docs" = false ]; then
   if [ "${CHECK_DEPENDABOT:-false}" = true ]; then

@@ -5,9 +5,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "@spec-loop/source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "@spec-loop/source": "./src/index.ts"
     }
   }
 }

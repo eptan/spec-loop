@@ -25,7 +25,15 @@ fi
 
 blocked_paths=""
 
+# Split only on newlines, not spaces/tabs, so a path containing a space is one entry, not several.
+# Also collect the same list as positional parameters ("$@") for safe, unsplit use with `git diff --`
+# below, since an unquoted `-- $files` would re-split on whitespace a second time.
+old_ifs=$IFS
+IFS='
+'
+set --
 for file in $files; do
+  set -- "$@" "$file"
   case "$file" in
     .env|.env.*|*.tmp|*.tmp.*|runs/*|coverage/*|dist/*|.nx/*)
       if [ "$file" != ".env.example" ]; then
@@ -35,6 +43,7 @@ for file in $files; do
       ;;
   esac
 done
+IFS=$old_ifs
 
 if [ -n "$blocked_paths" ]; then
   printf '%s\n' "Refusing to commit local secrets or transient artifacts:" >&2
@@ -48,13 +57,14 @@ if command -v gitleaks >/dev/null 2>&1; then
   else
     gitleaks protect --staged --no-banner --redact
   fi
+  printf '%s\n' "Secret check passed (engine: gitleaks)"
 else
-  printf '%s\n' "gitleaks not found; falling back to a narrow secret pattern check. Install gitleaks for full coverage: https://github.com/gitleaks/gitleaks#installing" >&2
+  printf '%s\n' "gitleaks not found; falling back to a narrow secret pattern check. This fallback is a review guard, not a guarantee — it matches only a fixed list of keyword-style assignments. Install gitleaks for full coverage: https://github.com/gitleaks/gitleaks#installing" >&2
 
   if [ -n "$diff_range" ]; then
-    secret_matches=$(git diff --text --name-only -G'(API_KEY|SECRET|TOKEN|PASSWORD)[[:space:]]*=[[:space:]]*["'"''][^"'"'']{8,}' "$diff_range" -- $files)
+    secret_matches=$(git diff --text --name-only -G'(API_KEY|SECRET|TOKEN|PASSWORD)[[:space:]]*=[[:space:]]*["'"''][^"'"'']{8,}' "$diff_range" -- "$@")
   else
-    secret_matches=$(git diff --cached --text --name-only -G'(API_KEY|SECRET|TOKEN|PASSWORD)[[:space:]]*=[[:space:]]*["'"''][^"'"'']{8,}' -- $files)
+    secret_matches=$(git diff --cached --text --name-only -G'(API_KEY|SECRET|TOKEN|PASSWORD)[[:space:]]*=[[:space:]]*["'"''][^"'"'']{8,}' -- "$@")
   fi
 
   if [ -n "$secret_matches" ]; then
@@ -62,4 +72,5 @@ else
     printf '%s\n' "$secret_matches" >&2
     exit 1
   fi
+  printf '%s\n' "Secret check passed (engine: fallback pattern, not gitleaks)"
 fi
