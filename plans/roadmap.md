@@ -10,7 +10,7 @@ contract.
 | --------------------------------------- | ------------------------------------------------------------- | -------- |
 | Repository evolution conventions        | `add-repository-evolution-markers`                            | Complete |
 | Executable PR and dependency governance | `add-executable-pr-and-dependency-governance`                 | Complete |
-| Foundation                              |                                                               | Complete |
+| Foundation                              | None                                                          | Complete |
 | Agent harness and MCP governance        | `improve-agentic-boiler-governance`                           | Complete |
 | Template and example expansion          | `add-second-example-package`, `add-template-onboarding-guide` | Complete |
 | Fork rename automation                  | `add-project-rename-tooling`                                  | Complete |

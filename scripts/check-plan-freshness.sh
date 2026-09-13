@@ -26,8 +26,13 @@ for row in re.findall(r"^\|.*\|$", plan, re.MULTILINE):
     cells = [cell.strip() for cell in row.strip("|").split("|")]
     if len(cells) != 3 or cells[0] == "Phase":
         continue
+    if all(re.fullmatch(r"[-: ]+", cell) for cell in cells):
+        continue  # GFM header-separator row (e.g. | --- | --- | --- |), not data
     phase, governing, status = cells
     names = re.findall(r"`([a-z0-9-]+)`", governing)
+    if not names and governing.lower().rstrip(".") != "none":
+        findings.append(f"- {phase} must reference a governing change or state None")
+        continue
     for name in names:
         if not (changes / name).is_dir() and name not in archived:
             findings.append(f"- {phase} references missing change `{name}`")

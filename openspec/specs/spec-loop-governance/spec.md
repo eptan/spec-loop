@@ -62,7 +62,14 @@ the corresponding gate. A gate that degrades to a fallback when its preferred to
 matching logic that actually detects the case it claims to on every supported platform, and MUST NOT
 depend on provider-specific credential names. When a precondition of the Nx quality targets is missing —
 such as unlinked workspace packages — the aggregate check MUST fail with an explicit, actionable message
-naming the remedy, rather than surfacing a misleading downstream error from a later target.
+naming the remedy, rather than surfacing a misleading downstream error from a later target. A change that
+touches only agent harness files (`.agent/`, `.agents`, `.claude/`, `.opencode/`) MUST NOT satisfy the
+documentation-freshness requirement on its own; it MUST be paired with an actual documentation, README,
+`AGENTS.md`, `CONTRIBUTING.md`, or OpenSpec update, the same as any other implementation change. When the
+CI-computed diff range has no real base commit (an all-zero SHA), a check that compares content MUST NOT
+crash on the malformed range; it MUST either skip explicitly with a stated reason, or substitute a
+deliberately conservative range, chosen per the check's own risk (a documentation check may skip; a secret
+scan MUST NOT skip and instead scans from the repository's root commit).
 
 #### Scenario: Run the CI-equivalent check locally
 
@@ -82,6 +89,22 @@ naming the remedy, rather than surfacing a misleading downstream error from a la
 - **WHEN** a contributor runs the aggregate check
 - **THEN** it fails before the Nx quality targets with a message naming the remedy (such as `npm install`)
 - **AND** it does not surface a bare module-resolution error as the first symptom
+
+#### Scenario: A harness-only change does not document itself
+
+- **GIVEN** a staged change touches only files under `.agent/`, `.agents`, `.claude/`, or `.opencode/`
+- **WHEN** the documentation freshness check runs
+- **THEN** it fails, the same as any other implementation change with no documentation update
+- **AND** it does not accept the harness change itself as satisfying its own requirement
+
+#### Scenario: A malformed zero-SHA diff range does not crash a check
+
+- **GIVEN** `CHECK_DIFF_RANGE` has an all-zero base commit SHA (a new branch's first push, or a
+  repository's first push after this template is generated)
+- **WHEN** the documentation freshness check or the secret scan runs
+- **THEN** neither crashes with a git plumbing error
+- **AND** the documentation check skips with an explicit stated reason
+- **AND** the secret scan instead scans from the repository's root commit rather than skipping
 
 ### Requirement: Roadmap status reflects OpenSpec state
 

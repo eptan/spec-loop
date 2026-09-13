@@ -16,8 +16,10 @@ archived = {
     re.sub(r"^\d{4}-\d{2}-\d{2}-", "", item.name)
     for item in archive.iterdir()
     if item.is_dir()
-}
-active = [item for item in changes.iterdir() if item.is_dir() and item.name != "archive"]
+} if archive.is_dir() else set()
+active = [
+    item for item in changes.iterdir() if item.is_dir() and item.name != "archive"
+] if changes.is_dir() else []
 findings = []
 dependencies = {}
 

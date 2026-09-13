@@ -6,6 +6,16 @@ files=$(git diff --cached --name-only --diff-filter=ACMR)
 
 if [ -z "$files" ] && [ -n "${CHECK_DIFF_RANGE:-}" ]; then
   diff_range="$CHECK_DIFF_RANGE"
+  zero_sha=0000000000000000000000000000000000000000
+  case "$diff_range" in
+    "$zero_sha"...*)
+      # No real base commit (zero SHA, e.g. a new branch's first push). Unlike documentation
+      # freshness, "scan nothing" is the wrong default for a secret scan — fall back to the
+      # conservative choice and scan from the repository's root commit instead.
+      root_sha=$(git rev-list --max-parents=0 HEAD | tail -1)
+      diff_range="${root_sha}...${diff_range#*...}"
+      ;;
+  esac
   files=$(git diff --name-only --diff-filter=ACMR "$diff_range")
 fi
 

@@ -3,6 +3,14 @@ set -eu
 
 staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
 
+zero_sha=0000000000000000000000000000000000000000
+case "${CHECK_DIFF_RANGE:-}" in
+  "$zero_sha"...*)
+    printf '%s\n' "CHECK_DIFF_RANGE has no real base commit (zero SHA, e.g. a new branch's first push); skipping documentation freshness check for this push"
+    exit 0
+    ;;
+esac
+
 if [ -z "$staged_files" ] && [ -n "${CHECK_DIFF_RANGE:-}" ]; then
   staged_files=$(git diff --name-only --diff-filter=ACMR "$CHECK_DIFF_RANGE")
 fi
@@ -17,7 +25,7 @@ has_docs=false
 
 for file in $staged_files; do
   case "$file" in
-    README.md|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|docs/*|openspec/*|.agent/*|.agents|.claude/*|.opencode/*)
+    README.md|AGENTS.md|CLAUDE.md|CONTRIBUTING.md|docs/*|openspec/*)
       has_docs=true
       ;;
   esac
