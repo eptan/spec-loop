@@ -1,12 +1,6 @@
 # workflow-governance Specification
 
-## Purpose
-
-Govern the executable parts of the contribution workflow: PR automation must pass body content literally
-and dependency updates must be checked for readiness before merge, so contributors and agents get the same
-guardrails whether they run `scripts/pr.sh` by hand or through an agent command.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: PR automation preserves literal body content
 
@@ -60,29 +54,3 @@ MUST be removed and any staged changes MUST be unstaged, unless the branch exist
 - GIVEN a branch already existed before this run, invoked with `--reuse-branch`
 - WHEN this run fails before creating a commit
 - THEN the branch is not deleted
-
-### Requirement: Dependency declarations are executable
-
-Repository checks MUST validate that every active OpenSpec change declares `## Dependencies` with either
-`None` or exact existing change names. A dependency MUST be considered ready only when its governing change is
-archived and its required tasks and verification evidence are complete.
-
-#### Scenario: Unknown dependency fails closed
-
-- GIVEN an active OpenSpec change names a nonexistent dependency
-- WHEN the repository dependency check runs
-- THEN it reports the exact missing dependency and fails
-
-### Requirement: Roadmap order reflects dependency readiness
-
-Roadmap checks MUST reject a dependent change listed before an unready predecessor and MUST require `Blocked`
-status when a named predecessor is not ready. A milestone MAY be `Pending` or `In progress` only when its
-predecessors are ready; `Complete` remains reserved for archived changes with recorded verification.
-
-#### Scenario: Unready predecessor blocks later work
-
-- GIVEN roadmap change B depends on unarchived change A
-- AND B appears after A but is marked `Pending`
-- WHEN the roadmap dependency check runs
-- THEN it reports B as blocked or drifted
-- AND it does not accept B as dependency-ready

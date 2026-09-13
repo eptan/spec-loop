@@ -165,10 +165,19 @@ fi
 start_branch=$(git branch --show-current)
 [ -n "$start_branch" ] || die "Refusing to run from a detached HEAD"
 
+created_branch=false
+committed=false
+
 restore_branch() {
   current_branch=$(git branch --show-current || true)
   if [ -n "$current_branch" ] && [ "$current_branch" != "$start_branch" ]; then
     git switch "$start_branch" >/dev/null 2>&1 || true
+  fi
+  if [ "$committed" != true ]; then
+    git reset >/dev/null 2>&1 || true
+    if [ "$created_branch" = true ]; then
+      git branch -D "$pr_branch" >/dev/null 2>&1 || true
+    fi
   fi
 }
 
@@ -189,6 +198,7 @@ if git show-ref --verify --quiet "refs/heads/$pr_branch"; then
   git switch "$pr_branch"
 else
   git switch -c "$pr_branch"
+  created_branch=true
 fi
 
 if [ "$stage_all" = true ]; then
@@ -214,6 +224,7 @@ fi
 
 subject="${commit_type}(${scope}): ${summary}"
 git commit -m "$subject"
+committed=true
 
 git push -u origin "$pr_branch"
 
@@ -221,7 +232,6 @@ require_branch "$pr_branch"
 
 existing_pr_url=$(gh pr view "$pr_branch" --json url --jq '.url' 2>/dev/null || true)
 if [ -n "$existing_pr_url" ]; then
-  require_branch "$pr_branch"
   printf '%s\n' "$existing_pr_url"
   exit 0
 fi
@@ -239,28 +249,8 @@ if [ -z "$pr_body" ]; then
     skipped_line="./scripts/check.sh (--skip-checks passed; document why in this PR before merging)"
   fi
 
-  pr_body="$(cat <<EOF
-## Summary
-
-- ${summary}
-
-## OpenSpec
-
-<!-- Which OpenSpec requirement or change under openspec/changes/ this supports. -->
-
-## Verification
-
-- ${verification_line}
-
-## Skipped checks
-
-- ${skipped_line}
-
-## Data / reports
-
-<!-- Note if this PR changes data, reports, or experiment outputs, and where. -->
-EOF
-)"
+  pr_body=$(printf '## Summary\n\n- %s\n\n## OpenSpec\n\n<!-- Which OpenSpec requirement or change under openspec/changes/ this supports. -->\n\n## Verification\n\n- %s\n\n## Skipped checks\n\n- %s\n\n## Data / reports\n\n<!-- Note if this PR changes data, reports, or experiment outputs, and where. -->\n' \
+    "$summary" "$verification_line" "$skipped_line")
 fi
 
 if [ -n "$body_file" ]; then
