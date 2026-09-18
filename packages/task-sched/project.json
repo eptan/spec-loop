@@ -1,0 +1,35 @@
+{
+  "name": "task-sched",
+  "sourceRoot": "packages/task-sched/src",
+  "projectType": "library",
+  "implicitDependencies": ["task-graph"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/task-sched",
+        "main": "packages/task-sched/src/index.ts",
+        "tsConfig": "packages/task-sched/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p packages/task-sched/tsconfig.lib.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/task-sched/src"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --conditions=@spec-loop/source --experimental-strip-types --test packages/task-sched/src/index.test.ts"
+      }
+    }
+  }
+}

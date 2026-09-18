@@ -1,0 +1,10 @@
+{
+  "name": "@spec-loop/planner",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@spec-loop/task-graph": "*",
+    "@spec-loop/task-sched": "*"
+  }
+}

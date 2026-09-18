@@ -5,7 +5,9 @@ the same discipline a well-run engineering team already uses. Specs come before 
 stay clear. Evidence beats trust. `hello` is a tiny deterministic library that makes the structure and
 feedback loop visible; it isn't pretending to be a real product. `greeter` depends on `hello` and exists for
 one reason: to show a second package actually working, with dependency resolution and sequencing happening
-in running code instead of a diagram.
+in running code instead of a diagram. `task-graph` and `task-sched` are the first "real" capability: a
+deterministic, local-only task-graph scheduler with its own contract, and `apps/planner` is the first app
+composition in `apps/` — a thin CLI over the `task-sched` surface.
 
 Forking this to start your own project? Read [`TEMPLATE.md`](TEMPLATE.md) first. For the thinking behind
 it, read [Building Agentic Software Without Losing Discipline](https://binarylogic.live/blog/building-agentic-software-without-losing-discipline).
@@ -80,6 +82,9 @@ The repository keeps its common engineering actions executable and visible:
 | `npm exec nx graph`                            | Opens the workspace project and dependency graph.                                                                          |
 | `npm exec nx run hello:test`                   | Runs the deterministic test target for the example library.                                                                |
 | `npm exec nx run greeter:test`                 | Runs the test target for the second example library, which depends on `hello`.                                             |
+| `npm exec nx run task-graph:test`              | Runs the contract tests for the pure task-graph core.                                                                      |
+| `npm exec nx run task-sched:test`              | Runs the contract tests for the composition surface (`plan`, `ready`, `schedule`).                                         |
+| `npm exec nx run planner:test`                 | Runs the end-to-end CLI tests for `apps/planner`.                                                                          |
 | `npm exec openspec -- validate --all --strict` | Strictly validates every accepted and active OpenSpec artifact.                                                            |
 | `./scripts/pr.sh`                              | Runs guarded checks, creates a commit, pushes a branch, and opens a pull request.                                          |
 
@@ -165,17 +170,17 @@ Planning and dependency conventions are documented in
 
 ## Repository Map
 
-| Path                | Responsibility                                                                  |
-| ------------------- | ------------------------------------------------------------------------------- |
-| `apps/`             | Future deployable applications                                                  |
-| `packages/`         | Reusable libraries and domain logic; `hello` and `greeter` (depends on `hello`) |
-| `openspec/specs/`   | Accepted behavioral contracts                                                   |
-| `openspec/changes/` | Proposed, not-yet-archived changes                                              |
-| `scripts/`          | Repository checks, hooks, and PR automation                                     |
-| `.agent/`           | Canonical agent commands and skills                                             |
-| `docs/`             | Durable policy and contributor explanations                                     |
-| `plans/`            | Teaching sequence and roadmap, not requirements                                 |
-| `.github/`          | CI, issue templates, and pull-request guidance                                  |
+| Path                | Responsibility                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `apps/`             | Deployable applications; `planner` is the first thin CLI over `task-sched`          |
+| `packages/`         | Reusable libraries and domain logic; `hello`, `greeter`, `task-graph`, `task-sched` |
+| `openspec/specs/`   | Accepted behavioral contracts                                                       |
+| `openspec/changes/` | Proposed, not-yet-archived changes                                                  |
+| `scripts/`          | Repository checks, hooks, and PR automation                                         |
+| `.agent/`           | Canonical agent commands and skills                                                 |
+| `docs/`             | Durable policy and contributor explanations                                         |
+| `plans/`            | Teaching sequence and roadmap, not requirements                                     |
+| `.github/`          | CI, issue templates, and pull-request guidance                                      |
 
 ## Contributing
 

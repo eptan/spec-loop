@@ -1,0 +1,32 @@
+{
+  "name": "planner",
+  "sourceRoot": "apps/planner/src",
+  "projectType": "application",
+  "implicitDependencies": ["task-graph", "task-sched"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --conditions=@spec-loop/source --experimental-strip-types --test apps/planner/src/planner.test.ts"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --conditions=@spec-loop/source --experimental-strip-types apps/planner/src/main.ts"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/planner/tsconfig.lib.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint apps/planner/src"
+      }
+    }
+  }
+}
