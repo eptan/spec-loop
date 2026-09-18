@@ -4,6 +4,15 @@
   "projectType": "application",
   "implicitDependencies": ["task-graph", "task-sched"],
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/apps/planner",
+        "main": "apps/planner/src/main.ts",
+        "tsConfig": "apps/planner/tsconfig.lib.json",
+        "assets": []
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

@@ -52,8 +52,11 @@ Or through the Nx targets in `apps/planner/project.json`:
 ```bash
 npm exec nx run planner:test
 npm exec nx run planner:run -- plan <file.json> [--format table|json]
-npm exec nx run planner:run -- schedule <file.json> --parallel 2
+npm exec nx run planner:run -- schedule <file.json>
 ```
+
+Nx reserves `--parallel` for itself and does not forward it to the target, so
+the wave cap only takes effect with the direct `node` command above.
 
 `--format json` (both subcommands) emits `JSON.stringify(value, null, 2)` so
 the output is machine-readable and identical across runs.

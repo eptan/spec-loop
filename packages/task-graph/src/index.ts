@@ -39,7 +39,7 @@ export function validate(tasks: Task[]): ValidatedTask[] {
     }
     seen.add(task.id);
 
-    const dependsOn = task.dependsOn ?? [];
+    const dependsOn = task.dependsOn === undefined ? [] : task.dependsOn;
     if (!Array.isArray(dependsOn)) {
       throw new Error(`task "${task.id}" dependsOn must be an array`);
     }
@@ -102,7 +102,7 @@ export function isReady(task: Task, completed: string[]): boolean {
   if (completed.includes(task.id)) {
     return false;
   }
-  const dependsOn = task.dependsOn ?? [];
+  const dependsOn = task.dependsOn === undefined ? [] : task.dependsOn;
   if (!Array.isArray(dependsOn)) {
     throw new Error(`task "${task.id}" dependsOn must be an array`);
   }

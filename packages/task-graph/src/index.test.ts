@@ -30,6 +30,14 @@ test('rejects duplicate ids', () => {
   );
 });
 
+test('rejects a null dependsOn instead of treating it as empty', () => {
+  assert.throws(
+    // @ts-expect-error — exercising the runtime guard for a non-array dependsOn
+    () => validate([{ id: 'a', dependsOn: null }]),
+    /task "a" dependsOn must be an array/,
+  );
+});
+
 test('rejects a two-node cycle naming both ids', () => {
   assert.throws(
     () =>
