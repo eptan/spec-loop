@@ -35,7 +35,10 @@ A JSON array of tasks. `id` is required and must be a non-empty string;
 ## Commands
 
 Run the CLI directly (no build step required — it resolves the packages by
-source through the `@spec-loop/source` export condition):
+source through the `@spec-loop/source` export condition). Note that
+`npm exec nx run planner:build` emits type declarations only, because
+`tsconfig.base.json` sets `emitDeclarationOnly` for every project; there is no
+runnable `dist/` output, so the `node` command below is the only runtime:
 
 ```bash
 # A dependency-ordered plan as a table (default) or JSON.
