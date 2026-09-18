@@ -1,0 +1,34 @@
+{
+  "name": "task-graph",
+  "sourceRoot": "packages/task-graph/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/task-graph",
+        "main": "packages/task-graph/src/index.ts",
+        "tsConfig": "packages/task-graph/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p packages/task-graph/tsconfig.lib.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/task-graph/src"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --experimental-strip-types --test packages/task-graph/src/index.test.ts"
+      }
+    }
+  }
+}

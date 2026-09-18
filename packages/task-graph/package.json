@@ -1,0 +1,11 @@
+{
+  "name": "@spec-loop/task-graph",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "@spec-loop/source": "./src/index.ts"
+    }
+  }
+}

@@ -8,10 +8,13 @@ this page is guidance, not a replacement for those contracts.
 
 ```text
 .
-├── apps/                 Future thin, deployable applications
+├── apps/                 Thin, deployable applications
+│   └── planner/          Deterministic task-graph CLI (plan / schedule)
 ├── packages/             Reusable libraries and domain logic
 │   ├── hello/            Current deterministic typed example
-│   └── greeter/          Second example; depends on hello, shows inter-package composition
+│   ├── greeter/          Second example; depends on hello, shows inter-package composition
+│   ├── task-graph/       Pure core: Task shape, validate, topoOrder, isReady
+│   └── task-sched/       Composition: plan, ready, schedule; depends on task-graph
 ├── openspec/
 │   ├── specs/            Accepted behavioral requirements and scenarios
 │   └── changes/          Active proposals; archive completed changes
@@ -65,6 +68,7 @@ Open the single governing spec for your task instead of scanning them all. Each 
 | `agent-attribution`             | Neutral role labels and no provider or marketing branding in produced content.   |
 | `public-repository-maintenance` | Public metadata, ownership, support, security, and publication safeguards.       |
 | `template-rename-tooling`       | Renaming the template's identity strings when a fork adopts a new project name.  |
+| `task-scheduling`               | Deterministic, local-only task-graph scheduling: validate, plan, wave schedule.  |
 
 ## Resuming Work
 
@@ -107,6 +111,9 @@ test target.
 
 Use [`docs/dependency-patterns.md`](dependency-patterns.md) when adding roadmap entries, declaring OpenSpec
 predecessors, or replacing a template example after a clone or fork.
+
+Use [`docs/task-scheduling.md`](task-scheduling.md) for the `task-graph` / `task-sched` / `apps/planner`
+capability: input shape, the two CLI commands, the determinism contract, and the boundaries.
 
 Use [`docs/agent-attribution.md`](agent-attribution.md) when writing repository reviews, reports, or
 documentation that must use neutral attribution.

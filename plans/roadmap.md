@@ -14,6 +14,7 @@ contract.
 | Agent harness and MCP governance        | `improve-agentic-boiler-governance`                           | Complete |
 | Template and example expansion          | `add-second-example-package`, `add-template-onboarding-guide` | Complete |
 | Fork rename automation                  | `add-project-rename-tooling`                                  | Complete |
+| Task scheduling                         | `add-task-scheduler`                                          | Complete |
 
 The repository evolution milestone comes first because it establishes the conventions used to plan and
 sequence every later capability. The executable PR and dependency governance milestone extends those
@@ -35,6 +36,14 @@ command (`npm run rename`), because the manual table was already missing several
 npm scope, `tsconfig.base.json`, `openspec/config.yaml`, the `spec-loop-governance` spec directory)
 that a fork owner following it verbatim would leave inconsistent. It comes after the template and example
 expansion milestone because it renames the packages that milestone introduced.
+
+The task scheduling milestone turns the repository's eponymous "spec loop" into a runnable primitive:
+a pure `task-graph` package whose contracts are pinned scenario-by-scenario, a `task-sched` package that
+composes it into `plan` and `schedule`, and an `apps/planner` CLI that is thin by construction (deterministic,
+local-only, no third-party runtime deps). It coexists with `hello`/`greeter` so the composition teaching pair
+remains the reference, and it demonstrates the packages→apps split the repository has been describing in
+prose. It comes after the fork rename automation milestone because it adds the new packages and app that a
+later rename would need to cover.
 
 Roadmap changes are ordered left to right within a milestone and top to bottom across milestones. A later
 change may be selected only after every earlier governing change is archived and verified. Use `Pending` for
