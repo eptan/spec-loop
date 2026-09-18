@@ -17,6 +17,7 @@ Use `scripts/pr.sh` for execution. Do not hand-roll a separate Git/GitHub workfl
 
 The script is responsible for:
 
+- archiving any OpenSpec change with every task checked, automatically, before staging
 - staging explicit files or `--all`
 - running secret checks
 - running repository checks unless skipped explicitly

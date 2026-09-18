@@ -201,13 +201,40 @@ else
   created_branch=true
 fi
 
+# A change with every task checked must be archived before it can merge (check-openspec-archive.sh
+# enforces this already) — archive it here automatically instead of requiring a separate manual step
+# before every PR. Uses the same detection scripts/check-openspec-archive.sh itself relies on, so this
+# never archives anything that check wouldn't already have blocked the merge over.
+completed_changes=$(./scripts/list-completed-changes.sh)
+if [ -n "$completed_changes" ]; then
+  old_ifs=$IFS
+  IFS='
+'
+  for change_name in $completed_changes; do
+    [ -n "$change_name" ] || continue
+    printf '%s\n' "Archiving completed OpenSpec change: $change_name"
+    npm exec openspec -- archive "$change_name" --yes
+  done
+  IFS=$old_ifs
+fi
+
 if [ "$stage_all" = true ]; then
   git add -A
 else
-  printf '%s' "$paths" | while IFS= read -r path; do
+  old_ifs=$IFS
+  IFS='
+'
+  for path in $paths; do
     [ -n "$path" ] || continue
     git add -- "$path"
   done
+  IFS=$old_ifs
+  # Auto-archiving above can produce files (openspec/changes/archive/**, openspec/specs/**) outside
+  # any explicit path the caller passed; those are a mandatory part of this commit once the archive
+  # step runs, not optional extras, so stage them regardless of staging mode.
+  if [ -n "$completed_changes" ]; then
+    git add -- openspec/
+  fi
 fi
 
 if git diff --cached --quiet; then
@@ -249,8 +276,14 @@ if [ -z "$pr_body" ]; then
     skipped_line="./scripts/check.sh (--skip-checks passed; document why in this PR before merging)"
   fi
 
-  pr_body=$(printf '## Summary\n\n- %s\n\n## OpenSpec\n\n<!-- Which OpenSpec requirement or change under openspec/changes/ this supports. -->\n\n## Verification\n\n- %s\n\n## Skipped checks\n\n- %s\n\n## Data / reports\n\n<!-- Note if this PR changes data, reports, or experiment outputs, and where. -->\n' \
-    "$summary" "$verification_line" "$skipped_line")
+  if [ -n "$completed_changes" ]; then
+    openspec_line=$(printf 'Auto-archived on this PR: %s' "$(printf '%s' "$completed_changes" | tr '\n' ' ')")
+  else
+    openspec_line="<!-- Which OpenSpec requirement or change under openspec/changes/ this supports. -->"
+  fi
+
+  pr_body=$(printf '## Summary\n\n- %s\n\n## OpenSpec\n\n%s\n\n## Verification\n\n- %s\n\n## Skipped checks\n\n- %s\n\n## Data / reports\n\n<!-- Note if this PR changes data, reports, or experiment outputs, and where. -->\n' \
+    "$summary" "$openspec_line" "$verification_line" "$skipped_line")
 fi
 
 if [ -n "$body_file" ]; then

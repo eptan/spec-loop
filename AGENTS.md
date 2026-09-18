@@ -16,6 +16,8 @@ over features that imitate a production system without a real use case.
 - Implement the smallest contract-covered slice; do not add speculative compatibility layers.
 - Update documentation in the same change when commands, outputs, workflows, configuration, or layout change.
 - Archive an OpenSpec change only after every task and verification requirement is complete.
+  `scripts/pr.sh` does this automatically for any change in that state before staging — do not check a
+  task box until it is genuinely done, since that is the only signal the automation trusts.
 
 ## Repository Design
 
