@@ -65,6 +65,22 @@ Every pull request should state:
 Use `.github/pull_request_template.md` and `./scripts/pr.sh` for guarded PR automation after explicit
 authorization.
 
+## Contributing Without Write Access
+
+You do not need push access to this repository. Contributions arrive as pull requests from a fork:
+
+1. Clone the repository, or your own fork of it, and run the Local Setup steps above.
+2. Create a feature branch: `git switch -c <branch>`. Do the work there, never on `main`.
+3. Run `./scripts/pr.sh` as usual. When you have no write access to the repository it detects that, forks
+   it to your account if you have not already, pushes the branch to your fork, and opens the pull
+   request against this repository. The same command works for maintainers, who push to the repository
+   directly.
+
+Without the GitHub CLI, do the same by hand: fork on GitHub, add your fork as a remote
+(`git remote add fork <your-fork-url>`), `git push -u fork <branch>`, and open the pull request from your
+fork's branch. CI runs on pull requests from forks; a maintainer may need to approve the first workflow
+run for a new contributor.
+
 ## Review Standard
 
 Review for behavioral correctness, clear boundaries, reproducibility, documentation freshness, and

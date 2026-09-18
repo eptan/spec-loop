@@ -22,7 +22,7 @@ The script is responsible for:
 - running secret checks
 - running repository checks unless skipped explicitly
 - committing
-- pushing
+- pushing to origin, or to the contributor's fork (created if needed) when they lack write access, and opening the PR against the upstream repository
 - creating the pull request
 - staying on the PR branch until `gh pr create` completes
 - restoring the branch that was current at script startup

@@ -23,6 +23,8 @@ Options:
   --skip-checks     Skip ./scripts/check.sh after staging. Use only for documented tool outages.
   -h, --help        Show this help
 
+Without write access to the repository, the branch is pushed to your fork (created if needed) and the
+PR opens against the upstream repository.
 The script restores the branch that was current at startup after PR creation or failure.
 It stays on the PR branch until after `gh pr create` returns.
 EOF
@@ -193,6 +195,18 @@ trap restore_branch EXIT INT TERM
 
 gh auth status >/dev/null 2>&1 || die "gh is not authenticated"
 
+# Contributors without write access push to their own fork and open a cross-repository PR.
+pr_target=$(./scripts/resolve-pr-target.sh)
+target_repo=$(printf '%s\n' "$pr_target" | sed -n '1p')
+push_remote=$(printf '%s\n' "$pr_target" | sed -n '2p')
+head_owner=$(printf '%s\n' "$pr_target" | sed -n '3p')
+target_owner=${target_repo%%/*}
+if [ "$head_owner" = "$target_owner" ]; then
+  head_ref=$pr_branch
+else
+  head_ref="${head_owner}:${pr_branch}"
+fi
+
 if git show-ref --verify --quiet "refs/heads/$pr_branch"; then
   [ "$reuse_branch" = true ] || die "Branch exists. Use --reuse-branch to continue on it."
   git switch "$pr_branch"
@@ -253,11 +267,35 @@ subject="${commit_type}(${scope}): ${summary}"
 git commit -m "$subject"
 committed=true
 
-git push -u origin "$pr_branch"
+if [ "$push_remote" = fork ]; then
+  fork_repo="${head_owner}/${target_repo#*/}"
+  printf '%s\n' "No push access to $target_repo; pushing to your fork $fork_repo instead."
+  if ! gh repo view "$fork_repo" >/dev/null 2>&1; then
+    gh repo fork "$target_repo" --clone=false
+  fi
+  if ! git remote get-url fork >/dev/null 2>&1; then
+    case "$(git remote get-url origin)" in
+      git@* | ssh://*) fork_url_field=sshUrl ;;
+      *) fork_url_field=url ;;
+    esac
+    git remote add fork "$(gh repo view "$fork_repo" --json "$fork_url_field" --jq ".$fork_url_field")"
+  fi
+fi
+
+# A freshly created fork can take a few seconds to accept pushes.
+push_attempt=1
+until git push -u "$push_remote" "$pr_branch"; do
+  if [ "$push_remote" != fork ] || [ "$push_attempt" -ge 5 ]; then
+    die "git push to $push_remote failed"
+  fi
+  push_attempt=$((push_attempt + 1))
+  sleep 3
+done
 
 require_branch "$pr_branch"
 
-existing_pr_url=$(gh pr view "$pr_branch" --json url --jq '.url' 2>/dev/null || true)
+existing_pr_url=$(gh pr list --repo "$target_repo" --head "$pr_branch" --state open --json url,headRepositoryOwner \
+  --jq ".[] | select(.headRepositoryOwner.login == \"$head_owner\") | .url" 2>/dev/null | sed -n '1p' || true)
 if [ -n "$existing_pr_url" ]; then
   printf '%s\n' "$existing_pr_url"
   exit 0
@@ -287,9 +325,9 @@ if [ -z "$pr_body" ]; then
 fi
 
 if [ -n "$body_file" ]; then
-  pr_url=$(gh pr create --base "$base_branch" --head "$pr_branch" --title "$pr_title" --body-file "$body_file")
+  pr_url=$(gh pr create --repo "$target_repo" --base "$base_branch" --head "$head_ref" --title "$pr_title" --body-file "$body_file")
 else
-  pr_url=$(gh pr create --base "$base_branch" --head "$pr_branch" --title "$pr_title" --body "$pr_body")
+  pr_url=$(gh pr create --repo "$target_repo" --base "$base_branch" --head "$head_ref" --title "$pr_title" --body "$pr_body")
 fi
 require_branch "$pr_branch"
 printf '%s\n' "$pr_url"
