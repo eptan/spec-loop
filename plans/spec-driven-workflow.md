@@ -24,7 +24,8 @@ change directory names, not branches or pull requests.
 5. Run focused tests, the changed-path command, and `npm run check`.
 6. Make a final documentation pass after implementation.
 7. Verify the change without changing task status.
-8. Archive only after every task and verification requirement is complete.
+8. Archive only after every task and verification requirement is complete. `scripts/pr.sh` archives a fully
+   checked change automatically when its pull request is created.
 
 Roadmap order is dependency order: a predecessor must be archived with recorded verification before a later
 change can be selected. See [`docs/dependency-patterns.md`](../docs/dependency-patterns.md) for the status

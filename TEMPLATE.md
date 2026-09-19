@@ -42,6 +42,12 @@ to describe your capability's actual contract instead of `greet`/`announce`. `np
 check only fails if `packages/hello`'s implementation and test disagree on whether the marker is still
 present — replacing both together (removing the marker from both) passes cleanly.
 
+The task planner (`packages/task-graph`, `packages/task-sched`, and `apps/planner`) is different. It's a
+working capability with its own accepted spec, `openspec/specs/task-scheduling/spec.md`, not a teaching
+fixture, so it carries no `TEMPLATE:REPLACE` marker. Keep it if your project can use a dependency-ordered
+task planner. To drop it, treat the removal like any other behavior change: propose it as an OpenSpec change
+so the spec, the orientation index, and [`docs/task-scheduling.md`](docs/task-scheduling.md) go with it.
+
 ## 3. Verify the workspace
 
 ```bash

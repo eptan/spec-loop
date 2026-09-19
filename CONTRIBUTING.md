@@ -46,7 +46,8 @@ npm exec nx run hello:test
 3. Implement the smallest change that satisfies the scenarios.
 4. Run `npm run check` and any changed-path end-to-end command.
 5. Update docs and task evidence after implementation.
-6. Archive the change only when all tasks and verification are complete.
+6. Archive the change only when all tasks and verification are complete. `./scripts/pr.sh` does this for
+   you: it archives every change whose `tasks.md` is fully checked, so check a box only when the task is done.
 
 ## Commit And PR Rules
 
