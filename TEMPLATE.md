@@ -99,7 +99,9 @@ conflicts only on the specific lines the rename touched — file names and conte
 project name, npm scope, or owner. Resolve those conflicts by keeping your fork's renamed value; everything
 else merges cleanly. The URL above is the one identity string the rename leaves alone: it is recorded as
 `template.upstream` in `package.json`, and the command preserves it wherever a line names `upstream`, so a
-renamed fork still points here rather than at itself.
+renamed fork still points here rather than at itself. The `upstream` remote is only for pulling:
+`scripts/pr.sh` resolves a pull request's repository from `origin` (or its parent, when `origin` is a
+fork), so adding `upstream` never redirects your pull requests to the template.
 
 If you imported the template as a single commit instead of forking it, there is no shared history to
 merge. Record the upstream commit you imported in that commit's message, then bring later template

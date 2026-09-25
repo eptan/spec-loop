@@ -5,10 +5,21 @@
 #   2. push remote: "origin" when the current user can push there, otherwise "fork"
 #   3. head owner: the account that owns the branch being pushed
 #   4. "yes" when a fork must be created/used, otherwise "no"
-# Optional argument: owner/name to inspect instead of the repository gh resolves from the checkout.
+# Optional argument: owner/name (or a repository URL) to inspect instead of the `origin` remote.
+#
+# The repository is always the one `origin` points at, passed to `gh` explicitly. Left to choose a remote
+# itself, `gh` prefers one named `upstream` over `origin`, so a project that added the template it was
+# forked from as `upstream` (the setup TEMPLATE.md recommends) would have its pull requests pushed to a
+# fork of the template and opened against the template instead of against its own repository.
 set -eu
 
-info=$(gh repo view ${1:+"$1"} --json nameWithOwner,isFork,parent,viewerPermission,owner)
+repo=${1:-}
+if [ -z "$repo" ]; then
+  repo=$(git remote get-url origin 2>/dev/null) \
+    || { printf '%s\n' "resolve-pr-target: no 'origin' remote; pass the repository as owner/name" >&2; exit 1; }
+fi
+
+info=$(gh repo view "$repo" --json nameWithOwner,isFork,parent,viewerPermission,owner)
 
 me=""
 case "$(printf '%s' "$info" | node -pe "JSON.parse(require('fs').readFileSync(0, 'utf8')).viewerPermission")" in
