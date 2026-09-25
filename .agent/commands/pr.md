@@ -21,11 +21,11 @@ Workflow:
 4. If the user supplied explicit `scripts/pr.sh` flags in `$ARGUMENTS`, preserve them unless they would commit secrets, generated data, or the wrong files.
 5. If required flags are missing, infer safe values from the session and diff when possible:
    - `--type`: one of `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`
-   - `--scope`: concise repo area, for example `repo`, `governance`, `greeter`, `openspec`
+   - `--scope`: concise repo area, for example `repo`, `governance`, `openspec`, or a package name
    - `--message`: imperative summary based on the actual changes
    - `--branch`: kebab-case branch name based on the message
 6. Ask one concise question if the intended files or PR base branch are ambiguous.
-7. If the current branch (from step 2) is already a feature branch, not `main`, pass that branch to
+7. If the current branch (from step 2) is already a feature branch, not the default branch, pass that branch to
    `--branch` with `--reuse-branch` so the script continues on it instead of requiring a fresh one.
 8. Run `./scripts/pr.sh` with either explicit file paths after `--` or `--all` only when the user clearly wants all current changes included.
 9. Ensure the script stays on the PR branch until `gh pr create` completes.

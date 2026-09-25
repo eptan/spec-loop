@@ -1,7 +1,7 @@
 #!/bin/sh
 # Requires network access to the npm registry; intentionally not part of scripts/check.sh (the local,
-# offline gate). Runs as a separate CI step. See docs/dependency-advisories.md for the accepted-advisory
-# convention this script enforces.
+# offline gate). Runs from scripts/check-ci-only.sh, in CI and from scripts/pr.sh before a pull request.
+# See docs/dependency-advisories.md for the accepted-advisory convention this script enforces.
 set -eu
 
 audit_json=$(npm audit --json || true)

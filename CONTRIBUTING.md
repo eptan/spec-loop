@@ -44,7 +44,8 @@ npm exec nx run hello:test
 1. Draft `proposal.md`, `design.md`, `tasks.md`, and the capability spec.
 2. Run `npm exec openspec -- validate <change> --strict`.
 3. Implement the smallest change that satisfies the scenarios.
-4. Run `npm run check` and any changed-path end-to-end command.
+4. Run `npm run check` and any changed-path end-to-end command. `./scripts/check-ci-only.sh` runs the
+   network-dependent checks CI adds on top; `./scripts/pr.sh` runs it for you before opening the PR.
 5. Update docs and task evidence after implementation.
 6. Archive the change only when all tasks and verification are complete. `./scripts/pr.sh` does this for
    you: it archives every change whose `tasks.md` is fully checked, so check a box only when the task is done.
@@ -71,7 +72,7 @@ authorization.
 You do not need push access to this repository. Contributions arrive as pull requests from a fork:
 
 1. Clone the repository, or your own fork of it, and run the Local Setup steps above.
-2. Create a feature branch: `git switch -c <branch>`. Do the work there, never on `main`.
+2. Create a feature branch: `git switch -c <branch>`. Do the work there, never on the default branch.
 3. Run `./scripts/pr.sh` as usual. When you have no write access to the repository it detects that, forks
    it to your account if you have not already, pushes the branch to your fork, and opens the pull
    request against this repository. The same command works for maintainers, who push to the repository

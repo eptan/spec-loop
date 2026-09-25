@@ -1,9 +1,10 @@
 # Dependency Advisories
 
-`npm audit` is not part of the local or CI quality gate (`npm run check`) because it requires network
-access to the registry; the repository's local checks are deliberately fast and offline. Instead,
-`scripts/check-dependency-advisories.sh` runs as a separate CI step and compares `npm audit`'s findings
-against the accepted list below, failing only on an advisory not yet reviewed here.
+`npm audit` is not part of the local quality gate (`npm run check`) because it requires network access
+to the registry; the repository's local checks are deliberately fast and offline. Instead,
+`scripts/check-dependency-advisories.sh` runs from `scripts/check-ci-only.sh`, in CI and from
+`scripts/pr.sh` before a pull request is opened, and compares `npm audit`'s findings against the accepted
+list below, failing only on an advisory not yet reviewed here.
 
 ## Accepted Advisories
 

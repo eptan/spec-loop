@@ -2,7 +2,8 @@
 # Exercises scripts/pr.sh's push-target logic offline: local bare repositories stand in for the upstream
 # and a contributor's fork (so `git push` is real), and a fake `gh` records what the script asked GitHub
 # to do. Covers a maintainer (pushes to origin) and a read-only contributor (pushes to a fork, opens a
-# cross-repository PR).
+# cross-repository PR). Each case uses a different default branch name (main, then master) and asserts the
+# PR targets it, proving the base comes from scripts/default-branch.sh rather than a hard-coded name.
 set -eu
 
 repo_root=$(git rev-parse --show-toplevel)
@@ -37,6 +38,7 @@ chmod +x "$bin/gh"
 run_case() {
   case_name=$1
   permission=$2
+  base=$3
 
   case_dir="$fixture/$case_name"
   mkdir -p "$case_dir/state"
@@ -48,15 +50,15 @@ run_case() {
   git config user.email fixture@example.com
   git config user.name fixture
   mkdir scripts
-  cp "$repo_root/scripts/pr.sh" "$repo_root/scripts/resolve-pr-target.sh" scripts/
-  for stub in check-secrets.sh check.sh list-completed-changes.sh; do
+  cp "$repo_root/scripts/pr.sh" "$repo_root/scripts/resolve-pr-target.sh" "$repo_root/scripts/default-branch.sh" scripts/
+  for stub in check-secrets.sh check.sh check-ci-only.sh list-completed-changes.sh; do
     printf '#!/bin/sh\nexit 0\n' > "scripts/$stub"
     chmod +x "scripts/$stub"
   done
-  git checkout -q -b main
+  git checkout -q -b "$base"
   git add -A
   git commit -q -m "chore(repo): fixture base"
-  git push -q origin main
+  git push -q origin "$base"
   echo change > change.txt
 
   : > "$case_dir/gh.log"
@@ -79,17 +81,19 @@ fail() {
   exit 1
 }
 
-run_case maintainer WRITE
+run_case maintainer WRITE main
 has_branch "$fixture/maintainer/upstream.git" || fail "maintainer: branch was not pushed to origin"
 has_branch "$fixture/maintainer/fork.git" && fail "maintainer: branch must not be pushed to a fork"
 grep -q -- '--head feat-x ' "$fixture/maintainer/gh.log" || fail "maintainer: PR head should be the bare branch name"
 grep -q 'repo fork' "$fixture/maintainer/gh.log" && fail "maintainer: must not create a fork"
+grep -q -- '--base main ' "$fixture/maintainer/gh.log" || fail "maintainer: PR base should be the detected default branch main"
 
-run_case contributor READ
+run_case contributor READ master
 has_branch "$fixture/contributor/fork.git" || fail "contributor: branch was not pushed to the fork"
 has_branch "$fixture/contributor/upstream.git" && fail "contributor: branch must not be pushed to upstream"
 grep -q 'repo fork acme/proj' "$fixture/contributor/gh.log" || fail "contributor: fork was not created"
 grep -q -- '--repo acme/proj' "$fixture/contributor/gh.log" || fail "contributor: PR must target the upstream repository"
 grep -q -- '--head contributor:feat-x' "$fixture/contributor/gh.log" || fail "contributor: PR head must be owner:branch"
+grep -q -- '--base master ' "$fixture/contributor/gh.log" || fail "contributor: PR base should be the detected default branch master, not a hard-coded main"
 
 printf '%s\n' "PR fork-workflow fixture passed"

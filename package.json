@@ -16,6 +16,9 @@
     "url": "https://github.com/salzayat/spec-loop/issues"
   },
   "homepage": "https://github.com/salzayat/spec-loop#readme",
+  "template": {
+    "upstream": "https://github.com/salzayat/spec-loop.git"
+  },
   "keywords": [
     "agents",
     "monorepo",

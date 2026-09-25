@@ -22,6 +22,11 @@ instead of surfacing later as a confusing build error. Pass `--owner <owner>`, `
 `--description <description>` to change those too; run `npm run rename -- --help` for the full option
 list. The command refuses to run on a dirty git worktree and is safe to re-run.
 
+If your repository's default branch is not `main`, pass `--default-branch <branch>` as well. It rewrites
+the CI workflow's push trigger, the one place the branch is named literally; the pre-commit hook and
+`scripts/pr.sh` detect the default branch from the remote (`scripts/default-branch.sh`) and need no edit.
+The command does not rename the git branch itself.
+
 `README.md`'s title and opening description aren't identity strings the command can infer generically —
 update those by hand to describe your actual project.
 
@@ -39,8 +44,9 @@ Replace `packages/hello`'s implementation and test with your first domain capabi
 `packages/greeter` with your second capability (keeping the same dependency-on-the-first pattern) or delete
 it if your project doesn't need a second package yet. Update `openspec/specs/repository-foundation/spec.md`
 to describe your capability's actual contract instead of `greet`/`announce`. `npm run check`'s convention
-check only fails if `packages/hello`'s implementation and test disagree on whether the marker is still
-present — replacing both together (removing the marker from both) passes cleanly.
+check looks at every package's `src/index.ts` and `src/index.test.ts` pair and fails only when the two
+disagree on whether the marker is still present — replacing both together (removing the marker from both)
+passes cleanly, and the check needs no edit once `hello` is gone.
 
 The task planner (`packages/task-graph`, `packages/task-sched`, and `apps/planner`) is different. It's a
 working capability with its own accepted spec, `openspec/specs/task-scheduling/spec.md`, not a teaching
@@ -56,9 +62,16 @@ npm ci
 npm run check
 ```
 
-`npm run check` must pass before you build anything else — it's the same gate this repository's own CI
-runs, and it validates specs, harness wiring, docs freshness, secrets, formatting, types, tests, and
-builds.
+`npm run check` must pass before you build anything else. It validates specs, harness wiring, docs
+freshness, secrets, formatting, types, tests, and builds, and it runs offline. CI runs that same gate plus
+`./scripts/check-ci-only.sh`: the rename fixture and the dependency-advisory review, which need the
+network or several seconds. `scripts/pr.sh` runs that script too, after committing and before pushing, so
+a branch is never green locally and red in CI on a check it never ran. Run it by hand whenever you want
+the full CI result before opening a pull request:
+
+```bash
+./scripts/check-ci-only.sh
+```
 
 ## 4. Propose your first domain change
 
@@ -84,4 +97,15 @@ git merge upstream/main
 Because `npm run rename` only rewrites real identity strings (no placeholder round-trip), an upstream merge
 conflicts only on the specific lines the rename touched — file names and content mentioning the old
 project name, npm scope, or owner. Resolve those conflicts by keeping your fork's renamed value; everything
-else merges cleanly.
+else merges cleanly. The URL above is the one identity string the rename leaves alone: it is recorded as
+`template.upstream` in `package.json`, and the command preserves it wherever a line names `upstream`, so a
+renamed fork still points here rather than at itself.
+
+If you imported the template as a single commit instead of forking it, there is no shared history to
+merge. Record the upstream commit you imported in that commit's message, then bring later template
+changes over as a patch instead:
+
+```bash
+git fetch upstream
+git diff <imported-upstream-commit> upstream/main | git apply --3way
+```

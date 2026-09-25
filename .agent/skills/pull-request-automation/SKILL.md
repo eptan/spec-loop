@@ -8,7 +8,7 @@ description: Use when creating commits or pull requests with scripts/pr.sh, /pr,
 Use this skill when the user asks to create a commit, push a branch, open a pull request, run `/pr`, or automate PR creation. The OpenCode command name is exactly `/pr`; do not require a dotted command name, namespace, or extra prefix.
 
 Implementation for a pull request should already be happening on a feature branch, created before file
-changes began — not on `main`. If a branch already exists when this skill runs, pass `--reuse-branch` so
+changes began — not on the default branch. If a branch already exists when this skill runs, pass `--reuse-branch` so
 the script continues on it instead of requiring a fresh one.
 
 ## Source Of Truth
@@ -22,6 +22,7 @@ The script is responsible for:
 - running secret checks
 - running repository checks unless skipped explicitly
 - committing
+- running the CI-only checks (`scripts/check-ci-only.sh`) after the commit and before the push, undoing the commit if they fail
 - pushing to origin, or to the contributor's fork (created if needed) when they lack write access, and opening the PR against the upstream repository
 - creating the pull request
 - staying on the PR branch until `gh pr create` completes

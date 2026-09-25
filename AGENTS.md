@@ -56,10 +56,13 @@ Before considering work complete, run:
 npm run check
 ```
 
-This is the canonical local and CI gate. It includes strict OpenSpec validation, harness topology,
-OpenSpec archive completeness, roadmap freshness, documentation freshness, secret scanning, formatting,
-linting, type checking, tests, and builds. Also run an exact end-to-end command for every changed runnable
-workflow or integration path and record the result in the PR.
+This is the canonical local gate, and CI runs it unchanged. It includes strict OpenSpec validation,
+harness topology, OpenSpec archive completeness, roadmap freshness, documentation freshness, secret
+scanning, formatting, linting, type checking, tests, and builds. CI additionally runs
+`./scripts/check-ci-only.sh` (the rename fixture and the dependency-advisory review, which need the
+network); `scripts/pr.sh` runs that script before opening a pull request, and a change that touches
+dependencies or the rename tooling should run it by hand first. Also run an exact end-to-end command for
+every changed runnable workflow or integration path and record the result in the PR.
 
 ## Shared Agent Harness
 
@@ -86,11 +89,13 @@ agent loop, harness adapters, and MCP boundary.
 ## Pull Requests
 
 Create and switch to a feature branch before making file changes intended for a pull request, not only
-before running `scripts/pr.sh` — implementation should never sit as uncommitted work on `main`. Use the
+before running `scripts/pr.sh` — implementation should never sit as uncommitted work on the default
+branch. Use the
 repository PR template and `scripts/pr.sh` when explicitly asked to create a PR; pass `--reuse-branch` when
 the branch already exists. Before doing so, inspect status, the complete diff, recent commits, remote
-tracking, OpenSpec tasks, and verification output. Do not commit directly to `main`, force-push, or include
-unrelated worktree changes. `.githooks/pre-commit` rejects a local commit made while `main` is checked out.
+tracking, OpenSpec tasks, and verification output. Do not commit directly to the default branch,
+force-push, or include unrelated worktree changes. `.githooks/pre-commit` rejects a local commit made while
+the default branch is checked out.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

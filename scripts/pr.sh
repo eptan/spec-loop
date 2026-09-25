@@ -9,18 +9,18 @@ Usage:
 
 Required:
   --type TYPE        Commit type: feat, fix, docs, test, refactor, chore, ci
-  --scope SCOPE      Commit scope, for example repo, greeter, openspec
+  --scope SCOPE      Commit scope, for example repo, openspec, or a package name
   --message SUMMARY  Commit summary without the type/scope prefix
   --branch BRANCH    PR branch to create or reuse
 
 Options:
-  --base BRANCH      PR base branch. Default: main
+  --base BRANCH      PR base branch. Default: the repository's default branch (scripts/default-branch.sh)
   --title TITLE      PR title. Default: commit subject
   --body BODY        PR body text. Default: generated template
   --body-file PATH   Read PR body literally from a file
   --all             Stage all tracked and untracked changes
   --reuse-branch    Reuse an existing local branch instead of requiring a new one
-  --skip-checks     Skip ./scripts/check.sh after staging. Use only for documented tool outages.
+  --skip-checks     Skip ./scripts/check.sh and ./scripts/check-ci-only.sh. Use only for documented tool outages.
   -h, --help        Show this help
 
 Without write access to the repository, the branch is pushed to your fork (created if needed) and the
@@ -38,7 +38,7 @@ die() {
 run_checks=true
 stage_all=false
 reuse_branch=false
-base_branch=main
+base_branch=
 commit_type=
 scope=
 summary=
@@ -159,6 +159,8 @@ command -v gh >/dev/null 2>&1 || die "GitHub CLI 'gh' is required"
 repo_root=$(git rev-parse --show-toplevel)
 cd "$repo_root"
 
+[ -n "$base_branch" ] || base_branch=$(./scripts/default-branch.sh)
+
 if [ -n "$body_file" ]; then
   [ -f "$body_file" ] || die "PR body file does not exist: $body_file"
   [ -r "$body_file" ] || die "PR body file is not readable: $body_file"
@@ -267,6 +269,19 @@ subject="${commit_type}(${scope}): ${summary}"
 git commit -m "$subject"
 committed=true
 
+# CI runs scripts/check.sh plus scripts/check-ci-only.sh (the checks that need the network or several
+# seconds). Run the same script here: after the commit, so the rename fixture exercises the committed tree,
+# and before the push, so nothing reaches GitHub that CI would reject. On failure, undo the commit but keep
+# the changes staged, which puts the run back where a scripts/check.sh failure leaves it: fix the cause
+# and retry the identical command.
+if [ "$run_checks" = true ]; then
+  if ! ./scripts/check-ci-only.sh; then
+    git reset --soft HEAD~1
+    committed=false
+    die "CI-only checks failed; the commit was undone and the changes are staged again"
+  fi
+fi
+
 if [ "$push_remote" = fork ]; then
   fork_repo="${head_owner}/${target_repo#*/}"
   printf '%s\n' "No push access to $target_repo; pushing to your fork $fork_repo instead."
@@ -307,11 +322,11 @@ fi
 
 if [ -z "$pr_body" ]; then
   if [ "$run_checks" = true ]; then
-    verification_line="./scripts/check.sh (ran during this PR)"
+    verification_line="./scripts/check.sh and ./scripts/check-ci-only.sh (ran during this PR)"
     skipped_line="None"
   else
-    verification_line="./scripts/check.sh was skipped with --skip-checks"
-    skipped_line="./scripts/check.sh (--skip-checks passed; document why in this PR before merging)"
+    verification_line="./scripts/check.sh and ./scripts/check-ci-only.sh were skipped with --skip-checks"
+    skipped_line="./scripts/check.sh and ./scripts/check-ci-only.sh (--skip-checks passed; document why in this PR before merging)"
   fi
 
   if [ -n "$completed_changes" ]; then

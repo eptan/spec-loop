@@ -36,7 +36,5 @@ jobs:
           CHECK_DIFF_RANGE: ${{ format('{0}...{1}', github.event.pull_request.base.sha || github.event.before, github.sha) }}
           CHECK_DEPENDABOT: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
         run: npm run check
-      - name: Run rename fixture
-        run: ./scripts/test-rename.sh
-      - name: Check dependency advisories
-        run: ./scripts/check-dependency-advisories.sh
+      - name: Run CI-only checks
+        run: ./scripts/check-ci-only.sh

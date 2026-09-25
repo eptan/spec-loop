@@ -71,7 +71,10 @@ Install the local hooks once per clone:
 ```
 
 `npm run check` runs strict OpenSpec validation, agent-harness and roadmap checks, documentation and secret
-checks, then Nx formatting, linting, type checking, tests, and builds.
+checks, then Nx formatting, linting, type checking, tests, and builds, all offline. CI runs that same gate
+plus `./scripts/check-ci-only.sh`, the rename fixture and the dependency-advisory review, which need the
+network; `scripts/pr.sh` runs it too before opening a pull request, and you can run it by hand for the full
+CI result.
 
 The secret check uses [gitleaks](https://github.com/gitleaks/gitleaks#installing) when it's on `PATH`, and
 falls back to a narrow keyword pattern otherwise. Install gitleaks locally for real coverage — either way,
@@ -97,6 +100,7 @@ The repository keeps its common engineering actions executable and visible:
 | `npm exec nx run planner:test`                 | Runs the end-to-end CLI tests for `apps/planner`.                                                                             |
 | `npm exec openspec -- validate --all --strict` | Strictly validates every accepted and active OpenSpec artifact.                                                               |
 | `./scripts/pr.sh`                              | Archives finished changes, runs guarded checks, commits, pushes, and opens a pull request (from a fork without write access). |
+| `./scripts/check-ci-only.sh`                   | Runs the checks CI adds on top of `npm run check` (rename fixture, dependency advisories); `pr.sh` runs it before pushing.    |
 | `./scripts/spec-status.sh`                     | Lists each capability with an active change and its completed tasks, read live from OpenSpec.                                 |
 
 The agent harness adds workflow commands for the spec and review loop:

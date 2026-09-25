@@ -11,12 +11,13 @@ fail() {
 
 usage() {
   cat >&2 <<'EOF'
-Usage: npm run rename -- <new-name> [--owner <owner>] [--title <title>] [--description <description>]
+Usage: npm run rename -- <new-name> [--owner <owner>] [--title <title>] [--description <description>] [--default-branch <branch>]
 
   <new-name>     New kebab-case project name (e.g. my-project).
   --owner        New GitHub owner/org (defaults to the current owner).
   --title        New title-case display name (defaults to Title-Casing <new-name>).
   --description  New package.json description (defaults to leaving it unchanged).
+  --default-branch  Branch to name in the CI workflow's push trigger (defaults to leaving it unchanged).
 EOF
   exit 1
 }
@@ -27,6 +28,7 @@ new_name=""
 new_owner=""
 new_title=""
 new_description=""
+new_default_branch=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -43,6 +45,11 @@ while [ $# -gt 0 ]; do
     --description)
       [ $# -ge 2 ] || fail "--description requires a value"
       new_description="$2"
+      shift 2
+      ;;
+    --default-branch)
+      [ $# -ge 2 ] || fail "--default-branch requires a value"
+      new_default_branch="$2"
       shift 2
       ;;
     -h | --help)
@@ -91,6 +98,21 @@ if [ -n "$new_owner" ]; then
   esac
 fi
 
+if [ -n "$new_default_branch" ]; then
+  case "$new_default_branch" in
+    [A-Za-z0-9]*)
+      case "$new_default_branch" in
+        *[!A-Za-z0-9._/-]* | *..* | */ | *.lock)
+          fail "New default branch '$new_default_branch' must be a plain git branch name (letters, digits, '.', '_', '/', '-'; no '..', no trailing '/', no '.lock')"
+          ;;
+      esac
+      ;;
+    *)
+      fail "New default branch '$new_default_branch' must start with a letter or digit"
+      ;;
+  esac
+fi
+
 [ -f package.json ] || fail "Must be run from the repository root (package.json not found)"
 
 if [ -n "$(git status --porcelain)" ]; then
@@ -106,12 +128,18 @@ old_title=$(node -e "const n=process.argv[1]; console.log(n.split('-').map(w=>w.
 new_owner="${new_owner:-$old_owner}"
 new_title="${new_title:-$(node -e "const n=process.argv[1]; console.log(n.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '))" "$new_name")}"
 
+identity_changed=true
 if [ "$old_name" = "$new_name" ] && [ "$old_owner" = "$new_owner" ]; then
-  printf '%s\n' "Already named '$new_name' under owner '$new_owner'; nothing to rename."
-  exit 0
+  identity_changed=false
+  if [ -z "$new_default_branch" ]; then
+    printf '%s\n' "Already named '$new_name' under owner '$new_owner'; nothing to rename."
+    exit 0
+  fi
 fi
 
-printf 'Renaming %s (owner: %s) -> %s (owner: %s)\n' "$old_name" "$old_owner" "$new_name" "$new_owner"
+if [ "$identity_changed" = true ]; then
+  printf 'Renaming %s (owner: %s) -> %s (owner: %s)\n' "$old_name" "$old_owner" "$new_name" "$new_owner"
+fi
 
 exclude_path() {
   case "$1" in
@@ -137,6 +165,16 @@ sed_escape() {
 # script's +x bit) survive the rewrite instead of being reset by an intermediate temp-file copy.
 rename_sed=$(mktemp)
 trap 'rm -f "$rename_sed"' EXIT
+
+# The upstream template URL (package.json's template.upstream, quoted verbatim in TEMPLATE.md's
+# upstream-tracking recipe) names the repository this one was forked from, so it must survive a rename even
+# though it contains the old owner and name. Protect it with a placeholder on every line that names
+# `upstream`, and restore it after the identity substitutions. package.json's own repository, bugs, and
+# homepage lines never name `upstream`, so they are still rewritten.
+template_upstream=$(node -p "((require('./package.json').template || {}).upstream) || ''")
+if [ -n "$template_upstream" ]; then
+  printf '/upstream/s/%s/RENAME_PROTECT_UPSTREAM_TOKEN/g\n' "$(sed_escape "$template_upstream")" >> "$rename_sed"
+fi
 
 if [ -d openspec/changes/archive ]; then
   idx=0
@@ -177,21 +215,27 @@ if [ -d openspec/changes/archive ]; then
   done
 fi
 
+if [ -n "$template_upstream" ]; then
+  printf 's/RENAME_PROTECT_UPSTREAM_TOKEN/%s/g\n' "$(sed_escape "$template_upstream")" >> "$rename_sed"
+fi
+
 # Content rewrite: every tracked, non-excluded file gets rewritten in place, preserving its mode.
 # Split only on newlines, not spaces/tabs, so a tracked path containing a space is one entry.
-old_ifs=$IFS
-IFS='
+if [ "$identity_changed" = true ]; then
+  old_ifs=$IFS
+  IFS='
 '
-files=$(git ls-files)
-for f in $files; do
-  exclude_path "$f" && continue
-  [ -f "$f" ] || continue
-  if grep -qF -- "$old_name" "$f" 2>/dev/null || grep -qF -- "$old_owner" "$f" 2>/dev/null || grep -qF -- "$old_title" "$f" 2>/dev/null; then
-    sed -i.bak -f "$rename_sed" "$f"
-    rm -f "$f.bak"
-  fi
-done
-IFS=$old_ifs
+  files=$(git ls-files)
+  for f in $files; do
+    exclude_path "$f" && continue
+    [ -f "$f" ] || continue
+    if grep -qF -- "$old_name" "$f" 2>/dev/null || grep -qF -- "$old_owner" "$f" 2>/dev/null || grep -qF -- "$old_title" "$f" 2>/dev/null; then
+      sed -i.bak -f "$rename_sed" "$f"
+      rm -f "$f.bak"
+    fi
+  done
+  IFS=$old_ifs
+fi
 
 if [ -n "$new_description" ]; then
   node -e "
@@ -202,9 +246,26 @@ if [ -n "$new_description" ]; then
   " "$new_description"
 fi
 
+# The CI workflow's push trigger is the one place the default branch is named literally (the pre-commit
+# hook and scripts/pr.sh detect it through scripts/default-branch.sh), so it is the one place a fork that
+# uses another default branch has to change.
+if [ -n "$new_default_branch" ]; then
+  workflow=.github/workflows/check.yml
+  [ -f "$workflow" ] || fail "--default-branch: $workflow not found"
+  old_default_branch=$(sed -n -E 's/^ *branches: \[([^]]+)\] *$/\1/p' "$workflow" | sed -n '1p')
+  [ -n "$old_default_branch" ] || fail "--default-branch: no 'branches: [...]' push trigger found in $workflow"
+  if [ "$old_default_branch" != "$new_default_branch" ]; then
+    sed -i.bak "s/^\( *branches: \)\[$(sed_escape "$old_default_branch")]/\1[$(sed_escape "$new_default_branch")]/" "$workflow"
+    rm -f "$workflow.bak"
+    printf 'CI push trigger: %s -> %s\n' "$old_default_branch" "$new_default_branch"
+  fi
+fi
+
 # Filename rewrite, directories first (deepest first) then files, both computed from a fresh
 # `git ls-files` snapshot taken right before each pass so a directory rename never leaves a stale
-# path queued behind it.
+# path queued behind it. Skipped when only --default-branch changed: no tracked name contains a
+# different old name then, and `git mv` refuses to move a path onto itself.
+if [ "$old_name" != "$new_name" ]; then
 dirs_to_rename=$(git ls-files | while IFS= read -r f; do dirname "$f"; done | sort -u | grep -F -- "$old_name" || true)
 if [ -n "$dirs_to_rename" ]; then
   printf '%s\n' "$dirs_to_rename" | awk -F/ '{ print NF, $0 }' | sort -rn | cut -d' ' -f2- | while IFS= read -r dir; do
@@ -234,6 +295,7 @@ if [ -n "$files_to_rename" ]; then
     new_base=$(printf '%s' "$base" | sed "s/${old_name}/${new_name}/g")
     git mv "$path" "$dir/$new_base"
   done
+fi
 fi
 
 # A replacement of different length than the original (in a name, owner, or title) shifts Markdown
